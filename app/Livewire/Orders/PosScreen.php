@@ -587,7 +587,7 @@ class PosScreen extends Component
         $this->validate([
             'name' => 'required',
             'phone' => 'required',
-            'email' => 'unique:customers|nullable'
+            'email' => 'nullable|email|unique:customers'
         ]);
 
         $customer = Customer::create([

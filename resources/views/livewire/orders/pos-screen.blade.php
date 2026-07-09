@@ -173,15 +173,8 @@
                     </div>
                     @can('customer_create')
                         <button type="button"
-                            class="btn btn-primary text-sm btn-sm radius-8 d-flex align-items-center gap-2"
+                            class="tw-px-4 tw-py-3 bg-primary-600 tw-rounded-md tw-text-white tw-flex tw-items-center tw-gap-1.5 tw-border-0 tw-shadow-md""
                             data-bs-toggle="modal" data-bs-target="#exampleModal" wire:click="resetInputFields()">
-                            <iconify-icon icon="ic:baseline-plus" class="icon text-xl line-height-1"></iconify-icon>
-                            {{ $lang->data['add_new_customer'] ?? 'Add New Customer' }}
-                        </button>
-                    @endcan
-                    {{-- @can('customer_create')
-                        <button type="button" data-bs-toggle="modal" data-bs-target="#addcustomer"
-                            class="tw-px-4 tw-py-3 bg-primary-600 tw-rounded-md tw-text-white tw-flex tw-items-center tw-gap-1.5 tw-border-0 tw-shadow-md">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
                                 class="bi bi-person-fill-add" viewBox="0 0 16 16">
                                 <path
@@ -190,7 +183,7 @@
                                     d="M2 13c0 1 1 1 1 1h5.256A4.5 4.5 0 0 1 8 12.5a4.5 4.5 0 0 1 1.544-3.393Q8.844 9.002 8 9c-5 0-6 3-6 4" />
                             </svg>
                         </button>
-                    @endcan --}}
+                    @endcan
                 </div>
             </div>
             <div
@@ -521,6 +514,7 @@
             </div>
         </div>
     </div>
+
     <div class="modal fade" id="notesModal" tabindex="-1" role="dialog" aria-labelledby="notesModal"
         aria-hidden="true" wire:ignore.self>
         <div class="modal-dialog modal-dialog-centered" role="document">
@@ -577,7 +571,6 @@
             </div>
         </div>
     </div>
-
 
     <div class="modal fade " id="addons" tabindex="-1" role="dialog" aria-labelledby="discount"
         aria-hidden="true" wire:ignore.self>
@@ -757,9 +750,6 @@
             </div>
         </div>
 
-        @include('livewire.customers.partials.add-customer-modal')
-
-
         <script wire:ignore>
             function posFunction() {
                 return {
@@ -814,6 +804,10 @@
                 }
             }
         </script>
+
         <livewire:components.check-financial-year-component />
     </div>
+
+    @include('livewire.customers.partials.add-customer-modal')
+
 </div>
