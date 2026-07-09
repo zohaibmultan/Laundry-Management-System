@@ -59,7 +59,8 @@
                 </div>
                 <div
                     class="tw-w-full tw-h-[calc(100vh-9rem)] tw-overflow-y-scroll custom-scroll tw-mt-2 tw-flex tw-p-0.5">
-                    <div class="tw-grid tw-gap-2 tw-h-fit tw-w-full" style="grid-template-columns: repeat(6, minmax(0, 1fr));">
+                    <div class="tw-grid tw-gap-2 tw-h-fit tw-w-full"
+                        style="grid-template-columns: repeat(6, minmax(0, 1fr));">
                         @foreach ($services as $item)
                             <a type="button" class=" hover:tw-translate-y-1" data-bs-toggle="modal"
                                 data-bs-target="#servicetype" wire:click="selectService({{ $item->id }})">
@@ -754,10 +755,10 @@
 
         <div class="modal fade " id="addcustomer" tabindex="-1" role="dialog" aria-labelledby="addcustomer"
             aria-hidden="true" wire:ignore.self>
-            <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h6 class="modal-title fw-600" id="addcustomer">
+            <div class="modal-dialog modal-md modal-dialog-centered" role="document">
+                <div class="modal-content radius-16 bg-base">
+                    <div class="modal-header py-16 px-24 border border-top-0 border-start-0 border-end-0">
+                        <h6 class="modal-title fw-600 text-md" id="addcustomer">
                             {{ $lang->data['add_customer'] ?? 'Add Customer' }}
                         </h6>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
@@ -851,17 +852,12 @@
                                 window.location.href = '{{ url('admin/orders/') }}';
                             } else {
                                 window.location.reload();
-
                             }
                         })
                         this.$wire.on('printPageOrder', orderId => {
                             var $id = orderId;
                             window.open(
                                 '{{ url('admin/orders/print') }}' + '/' + $id,
-                                '_blank'
-                            );
-                            window.open(
-                                '{{ url('admin/orders/print-tag') }}' + '/' + $id,
                                 '_blank'
                             );
                             window.onfocus = function() {
@@ -874,10 +870,6 @@
                             var $id = orderId;
                             window.open(
                                 '{{ url('admin/orders/print') }}' + '/' + $id,
-                                '_blank'
-                            );
-                            window.open(
-                                '{{ url('admin/orders/print-tag') }}' + '/' + $id,
                                 '_blank'
                             );
                             window.onfocus = function() {
