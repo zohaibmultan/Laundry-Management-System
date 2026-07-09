@@ -27,6 +27,7 @@ class PosScreen extends Component
     public $services, $search_query, $order_id, $inputs = [], $selservices = [], $customer, $date, $delivery_date, $discount, $paid_amount, $payment_type = 1;
     public $payment_notes, $service_types, $service, $inputi, $prices = [], $selling_price = [], $quantity = [], $selected_type = [], $addons, $selected_addons = [], $colors = [];
     public $customer_name, $customer_phone, $email, $tax_no, $address, $selected_customer, $customers, $customer_query, $is_active = 1;
+    public $name, $phone, $tax_number;
     public $customer_packages, $selected_customer_package_id, $selected_customer_package;
     public $package_service_detail_ids = [], $package_service_type_ids = [], $package_service_ids = [], $package_total_quantity = 0, $package_remaining_quantity = 0;
     public $total, $sub_total, $addon_total, $tax_percent, $tax, $balance, $flag = 0, $lang,$taxamount;
@@ -567,6 +568,49 @@ class PosScreen extends Component
         $this->address = '';
         $this->is_active = 1;
     }
+    
+    /* reset input fields for shared customer creation modal */
+    public function resetInputFields()
+    {
+        $this->name = '';
+        $this->phone = '';
+        $this->email = '';
+        $this->tax_number = '';
+        $this->address = '';
+        $this->is_active = 1;
+        $this->resetErrorBag();
+    }
+
+    /* store customer data from shared modal */
+    public function store()
+    {
+        $this->validate([
+            'name' => 'required',
+            'phone' => 'required',
+            'email' => 'unique:customers|nullable'
+        ]);
+
+        $customer = Customer::create([
+            'name'  => $this->name,
+            'phone' => $this->phone,
+            'email' => $this->email,
+            'tax_number'    => $this->tax_number,
+            'address'   => $this->address,
+            'is_active' => $this->is_active ?? 0,
+        ]);
+
+        $this->selected_customer = $customer;
+        $this->customer_query = '';
+        $this->customers = [];
+        $this->loadCustomerPackages();
+        $this->dispatch('closemodal');
+        $this->resetInputFields();
+        $this->dispatch(
+            'alert',
+            ['type' => 'success',  'message' => 'Customer has been created!']
+        );
+    }
+
     /* select customer */
     public function selectCustomer($id)
     {
