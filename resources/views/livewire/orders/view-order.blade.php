@@ -259,6 +259,7 @@
                 @endcan
                 @can('order_print')
                 <a href="{{url('admin/orders/print/'.$order->id)}}" target="_blank" type="button" class="btn btn-outline-warning-600 radius-8 px-20 py-11 tw-mt-3 tw-w-full">{{ $lang->data['print_invoice'] ?? 'Print Invoice' }}</a>
+                <a href="{{url('admin/orders/print-tag/'.$order->id)}}" target="_blank" type="button" class="btn btn-outline-info-600 radius-8 px-20 py-11 tw-mt-3 tw-w-full">Print Cloth Tag</a>
                 @endcan()
             </div>
         </div>

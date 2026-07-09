@@ -20,6 +20,7 @@ Route::group(['middleware' => [\App\Http\Middleware\InstalledMiddleware::class]]
             Route::get('/', \App\Livewire\Orders\OrdersList::class)->name('orders');
             Route::get('/view/{id}', \App\Livewire\Orders\ViewOrder::class)->name('order.view');
             Route::get('/print/{id}', \App\Livewire\Orders\PrintOrder::class)->name('order.print');
+            Route::get('/print-tag/{id}', \App\Livewire\Orders\PrintTag::class)->name('order.print-tag');
         });
         Route::group(['prefix' => 'customers/'], function () {
             Route::get('/', \App\Livewire\Customers\CustomersList::class)->name('customers');
