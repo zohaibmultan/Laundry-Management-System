@@ -2,34 +2,56 @@
 
 namespace App\Livewire\Customers;
 
-use Livewire\Attributes\Title;
-use Livewire\Component;
+use App\Exports\CustomersExport;
 use App\Models\Customer;
+use App\Models\Order;
+use App\Models\Payment;
 use App\Models\Translation;
+use Auth;
+use Excel;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Pagination\Cursor;
-use Auth;
-use App\Exports\CustomersExport;
-use App\Models\Payment;
-use App\Models\Order;
-use Excel;
+use Livewire\Attributes\Title;
+use Livewire\Component;
 
 class CustomersList extends Component
 {
     #[Title('Customers')]
-    public $customers, $name, $email, $tax_number, $is_active = 1, $phone, $address, $search, $lang, $customer;
+    public $customers;
+
+    public $name;
+
+    public $email;
+
+    public $tax_number;
+
+    public $is_active = 1;
+
+    public $phone;
+
+    public $address;
+
+    public $search;
+
+    public $lang;
+
+    public $customer;
+
     public $editMode = false;
+
     public $nextCursor;
+
     protected $currentCursor;
+
     public $hasMorePages;
 
     /* called before render */
     public function mount()
     {
-        if(!\Illuminate\Support\Facades\Gate::allows('customer_list')){
+        if (! \Illuminate\Support\Facades\Gate::allows('customer_list')) {
             abort(404);
         }
-        $this->customers = new EloquentCollection();
+        $this->customers = new EloquentCollection;
         $this->loadCustomers();
 
         if (session()->has('selected_language')) { /* if session has selected laugage*/
@@ -38,11 +60,13 @@ class CustomersList extends Component
             $this->lang = Translation::where('default', 1)->first();
         }
     }
+
     /* render the page */
     public function render()
     {
         return view('livewire.customers.customers-list');
     }
+
     /* reset input file */
     public function resetInputFields()
     {
@@ -55,6 +79,7 @@ class CustomersList extends Component
         $this->is_active = 1;
         $this->resetErrorBag();
     }
+
     /* store customer data */
     public function store()
     {
@@ -63,18 +88,18 @@ class CustomersList extends Component
         /* rule settings */
         $this->validate([
             'name' => 'required',
-            'email' => 'nullable|email|unique:customers',
+            'email' => 'nullable|email',
             'phone' => 'required',
         ]);
 
-        $customer = new Customer();
+        $customer = new Customer;
         $customer->name = $this->name;
         $customer->phone = $this->phone;
         $customer->email = $this->email;
         $customer->tax_number = $this->tax_number;
         $customer->address = ($this->address);
         $customer->created_by = Auth::user()->id;
-        $customer->is_active = ($this->is_active) ? "1" : "0";
+        $customer->is_active = ($this->is_active) ? '1' : '0';
         $customer->save();
         $this->customers = Customer::latest()->get();
         $this->resetInputFields();
@@ -84,15 +109,16 @@ class CustomersList extends Component
             ['type' => 'success',  'message' => 'Customer  has been created!']
         );
     }
+
     /* process while update */
     public function updated($name, $value)
     {
         if ($name == 'search' && $value != '') {
-            $this->customers = Customer::where('name', 'like', '%' . $value)->latest()->get();
+            $this->customers = Customer::where('name', 'like', '%'.$value)->latest()->get();
             $this->reloadCustomers();
         } elseif ($name == 'search' && $value == '') {
 
-            $this->customers = new EloquentCollection();
+            $this->customers = new EloquentCollection;
             $this->reloadCustomers();
         }
         /*if the updated element is address */
@@ -100,6 +126,7 @@ class CustomersList extends Component
             $this->address = $value;
         }
     }
+
     /* view customer details to update */
     public function edit($id)
     {
@@ -113,6 +140,7 @@ class CustomersList extends Component
         $this->name = $this->customer->name;
         $this->is_active = $this->customer->is_active;
     }
+
     /* update customer details */
     public function update()
     {
@@ -121,7 +149,7 @@ class CustomersList extends Component
         $this->validate([
             'name' => 'required',
             'phone' => 'required',
-            'email' => 'nullable|email|unique:customers,email,' . $this->customer->id,
+            'email' => 'nullable|email|unique:customers,email,'.$this->customer->id,
         ]);
 
         $this->customer->name = $this->name;
@@ -129,7 +157,7 @@ class CustomersList extends Component
         $this->customer->email = $this->email;
         $this->customer->tax_number = $this->tax_number;
         $this->customer->address = $this->address;
-        $this->customer->is_active = ($this->is_active) ? "1" : "0";
+        $this->customer->is_active = ($this->is_active) ? '1' : '0';
         $this->customer->save();
         $this->refresh();
         $this->resetInputFields();
@@ -140,6 +168,7 @@ class CustomersList extends Component
             ['type' => 'success',  'message' => 'Customer has been updated!']
         );
     }
+
     /* refresh the page */
     public function refresh()
     {
@@ -148,9 +177,10 @@ class CustomersList extends Component
             $this->customers = $this->customers->fresh();
         }
     }
+
     public function loadCustomers()
     {
-        if ($this->hasMorePages !== null  && !$this->hasMorePages) {
+        if ($this->hasMorePages !== null && ! $this->hasMorePages) {
             return;
         }
         $customerlist = $this->filterdata();
@@ -160,26 +190,30 @@ class CustomersList extends Component
         }
         $this->currentCursor = $customerlist->cursor();
     }
+
     public function filterdata()
     {
         if ($this->search || $this->search != '') {
-            $customers = \App\Models\Customer::where('name', 'like', '%' . $this->search . '%')
+            $customers = \App\Models\Customer::where('name', 'like', '%'.$this->search.'%')
                 ->latest()
                 ->cursorPaginate(10, ['*'], 'cursor', Cursor::fromEncoded($this->nextCursor));
+
             return $customers;
         } else {
 
             $customers = \App\Models\Customer::latest()
                 ->cursorPaginate(10, ['*'], 'cursor', Cursor::fromEncoded($this->nextCursor));
+
             return $customers;
         }
     }
+
     public function reloadCustomers()
     {
-        $this->customers = new EloquentCollection();
+        $this->customers = new EloquentCollection;
         $this->nextCursor = null;
         $this->hasMorePages = null;
-        if ($this->hasMorePages !== null  && !$this->hasMorePages) {
+        if ($this->hasMorePages !== null && ! $this->hasMorePages) {
             return;
         }
         $customers = $this->filterdata();
@@ -189,11 +223,13 @@ class CustomersList extends Component
         }
         $this->currentCursor = $customers->cursor();
     }
+
     /* export to excel */
     public function downloadFile()
     {
         return Excel::download(new CustomersExport, 'customers_list.xlsx');
     }
+
     /* delete the service */
     public function delete($id)
     {
@@ -205,19 +241,19 @@ class CustomersList extends Component
                 ['type' => 'error',  'message' => 'Cannot Delete Customer!']
             );
         } else {
-        try {
-            Customer::where('id', $id)->delete();
-            $this->reloadCustomers();
-            $this->dispatch(
-                'alert',
-                ['type' => 'success',  'message' => 'Customer has been deleted!']
-            );
-        } catch (\Exception $e) {
-            $this->dispatchBrowserEvent(
-                'alert',
-                ['type' => 'error',  'message' => 'Cannot Delete Customer!']
-            );
+            try {
+                Customer::where('id', $id)->delete();
+                $this->reloadCustomers();
+                $this->dispatch(
+                    'alert',
+                    ['type' => 'success',  'message' => 'Customer has been deleted!']
+                );
+            } catch (\Exception $e) {
+                $this->dispatchBrowserEvent(
+                    'alert',
+                    ['type' => 'error',  'message' => 'Cannot Delete Customer!']
+                );
+            }
         }
-    }
     }
 }
