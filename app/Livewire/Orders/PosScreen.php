@@ -556,6 +556,9 @@ class PosScreen extends Component
             'is_active' => $this->is_active ?? 0,
         ]);
         $this->selected_customer = $customer;
+        $this->customer_query = '';
+        $this->customers = [];
+        $this->loadCustomerPackages();
         $this->dispatch('closemodal');
         $this->customer_name = '';
         $this->customer_phone = '';
@@ -869,6 +872,7 @@ class PosScreen extends Component
                 ['type' => 'success',  'message' => $order->order_number . ' Was Successfully Created!']
             );
         }
+
         if(\Illuminate\Support\Facades\Gate::allows('order_print')){
             if($this->order){
                 $this->dispatch('printPageOrder', $order->id);
@@ -878,6 +882,7 @@ class PosScreen extends Component
                 $this->clearAll();
             }
         }
+        
         if($this->order){
         }
         else{
