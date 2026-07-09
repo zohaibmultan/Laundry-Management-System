@@ -172,6 +172,14 @@
                         @endif
                     </div>
                     @can('customer_create')
+                        <button type="button"
+                            class="btn btn-primary text-sm btn-sm radius-8 d-flex align-items-center gap-2"
+                            data-bs-toggle="modal" data-bs-target="#exampleModal" wire:click="resetInputFields()">
+                            <iconify-icon icon="ic:baseline-plus" class="icon text-xl line-height-1"></iconify-icon>
+                            {{ $lang->data['add_new_customer'] ?? 'Add New Customer' }}
+                        </button>
+                    @endcan
+                    {{-- @can('customer_create')
                         <button type="button" data-bs-toggle="modal" data-bs-target="#addcustomer"
                             class="tw-px-4 tw-py-3 bg-primary-600 tw-rounded-md tw-text-white tw-flex tw-items-center tw-gap-1.5 tw-border-0 tw-shadow-md">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
@@ -182,7 +190,7 @@
                                     d="M2 13c0 1 1 1 1 1h5.256A4.5 4.5 0 0 1 8 12.5a4.5 4.5 0 0 1 1.544-3.393Q8.844 9.002 8 9c-5 0-6 3-6 4" />
                             </svg>
                         </button>
-                    @endcan
+                    @endcan --}}
                 </div>
             </div>
             <div
@@ -737,11 +745,7 @@
                                 <span>{{ $lang->data['add_payment'] ?? 'Add Payment' }}</span>
                             </button>
                         </div>
-
                     </div>
-
-
-
                     <div class="modal-footer tw-mt-12">
                         <button
                             class="tw-justify-center tw-font-semibold tw-py-2 tw-h-full bg-primary-600 tw-rounded-md tw-text-white tw-flex tw-items-center tw-gap-1.5 tw-px-12 tw-border-0 tw-shadow-md "
@@ -828,6 +832,8 @@
                 </div>
             </div>
         </div>
+
+
         <script wire:ignore>
             function posFunction() {
                 return {
