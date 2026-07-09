@@ -870,22 +870,12 @@ class PosScreen extends Component
             );
         }
         if(\Illuminate\Support\Facades\Gate::allows('order_print')){
-            if ($type === 'print_tag') {
-                if($this->order){
-                    $this->dispatch('printTagPageOrder', $order->id);
-                }
-                else{
-                    $this->dispatch('printTagPage', $order->id);
-                    $this->clearAll();
-                }
-            } else {
-                if($this->order){
-                    $this->dispatch('printPageOrder', $order->id);
-                }
-                else{
-                    $this->dispatch('printPage', $order->id);
-                    $this->clearAll();
-                }
+            if($this->order){
+                $this->dispatch('printPageOrder', $order->id);
+            }
+            else{
+                $this->dispatch('printPage', $order->id);
+                $this->clearAll();
             }
         }
         if($this->order){

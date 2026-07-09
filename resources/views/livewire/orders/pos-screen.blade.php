@@ -454,11 +454,6 @@
                     <span>{{ $lang->data['save_print'] ?? 'Save & Print' }}</span>
                 </button>
                 <button
-                    class="tw-px-2 tw-justify-center tw-font-semibold tw-py-2 tw-h-full bg-info-600 tw-rounded-md tw-text-white tw-flex tw-items-center tw-gap-1.5 tw-w-full tw-border-0 tw-shadow-md "
-                    wire:click.prevent="save('print_tag')">
-                    <span>Print Cloth Tag</span>
-                </button>
-                <button
                     class="tw-px-2 tw-py-2.5 tw-bg-red-500 tw-rounded-md tw-text-white tw-h-full tw-flex tw-items-center tw-gap-1.5 tw-border-0 tw-shadow-md  "
                     wire:click.prevent="clearAll">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
@@ -746,16 +741,11 @@
 
 
 
-                    <div class="modal-footer tw-mt-12 tw-flex tw-gap-2">
+                    <div class="modal-footer tw-mt-12">
                         <button
                             class="tw-justify-center tw-font-semibold tw-py-2 tw-h-full bg-primary-600 tw-rounded-md tw-text-white tw-flex tw-items-center tw-gap-1.5 tw-px-12 tw-border-0 tw-shadow-md "
                             wire:click.prevent="save">
                             <span>{{ $lang->data['save_print'] ?? 'Save & Print' }}</span>
-                        </button>
-                        <button
-                            class="tw-justify-center tw-font-semibold tw-py-2 tw-h-full bg-info-600 tw-rounded-md tw-text-white tw-flex tw-items-center tw-gap-1.5 tw-px-12 tw-border-0 tw-shadow-md "
-                            wire:click.prevent="save('print_tag')">
-                            <span>Print Cloth Tag</span>
                         </button>
                     </div>
                 </div>
@@ -870,28 +860,6 @@
                                 '{{ url('admin/orders/print') }}' + '/' + $id,
                                 '_blank'
                             );
-                            window.onfocus = function() {
-                                setTimeout(function() {
-
-                                    window.location.href = '{{ url('admin/orders/') }}';
-
-                                }, 1000);
-                            }
-                        })
-                        this.$wire.on('printPage', orderId => {
-                            var $id = orderId;
-                            window.open(
-                                '{{ url('admin/orders/print') }}' + '/' + $id,
-                                '_blank'
-                            );
-                            window.onfocus = function() {
-                                setTimeout(function() {
-                                    window.location.reload()
-                                }, 1000);
-                            }
-                        })
-                        this.$wire.on('printTagPageOrder', orderId => {
-                            var $id = orderId;
                             window.open(
                                 '{{ url('admin/orders/print-tag') }}' + '/' + $id,
                                 '_blank'
@@ -902,8 +870,12 @@
                                 }, 1000);
                             }
                         })
-                        this.$wire.on('printTagPage', orderId => {
+                        this.$wire.on('printPage', orderId => {
                             var $id = orderId;
+                            window.open(
+                                '{{ url('admin/orders/print') }}' + '/' + $id,
+                                '_blank'
+                            );
                             window.open(
                                 '{{ url('admin/orders/print-tag') }}' + '/' + $id,
                                 '_blank'
