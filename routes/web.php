@@ -1,13 +1,41 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Middleware\Admin;
 use App\Http\Middleware\Store;
+use Illuminate\Support\Facades\Route;
+
+Route::get('/qz/sign', function (\Illuminate\Http\Request $request) {
+    $req = $request->input('request');
+    $privateKeyPath = storage_path('app/qz/private-key.pem');
+    if (! file_exists($privateKeyPath)) {
+        return response('Key not found', 500);
+    }
+
+    $privateKey = file_get_contents($privateKeyPath);
+    $key = openssl_get_privatekey($privateKey);
+    if (!$key) {
+        return response('Invalid private key', 500);
+    }
+
+    $signature = null;
+    openssl_sign($req, $signature, $key, OPENSSL_ALGO_SHA512);
+    $encoded = base64_encode($signature);
+
+    return response($encoded, 200)->header('Content-Type', 'text/plain');
+})->name('qz.sign');
+
+Route::get('/qz/certificate', function () {
+    $certifiatePath = storage_path('app/qz/digital-certificate.txt');
+    if (! file_exists($certifiatePath)) {
+        return response('Certificate not found', 500);
+    }
+
+    return response(file_get_contents($certifiatePath))->header('Content-Type', 'text/plain');
+})->name('qz.certificate');
 
 Route::get('/license', \App\Livewire\Installer\LicenseExpired::class)->name('license');
 Route::get('/install', \App\Livewire\Installer\InstallApp::class)->name('install');
 Route::get('/update', \App\Livewire\Installer\UpdaterApp::class)->name('update');
-Route::get('/reset-password/{token}',\App\Livewire\Auth\ForgotPassword::class);
+Route::get('/reset-password/{token}', \App\Livewire\Auth\ForgotPassword::class);
 
 Route::group(['middleware' => [\App\Http\Middleware\InstalledMiddleware::class]], function () {
     Route::get('/', \App\Livewire\Auth\Login::class)->name('login');
@@ -60,7 +88,7 @@ Route::group(['middleware' => [\App\Http\Middleware\InstalledMiddleware::class]]
                 Route::get('order/{from_date}/{to_date}/{status}', \App\Livewire\Reports\DownloadReport\OrderReport::class);
             });
         });
-         /* expense */
+        /* expense */
         Route::group(['prefix' => 'expense/'], function () {
             Route::get('/', \App\Livewire\Expense\ExpenseList::class)->name('expense');
             Route::get('/category', \App\Livewire\Expense\ExpenseCategoryList::class)->name('expense.category');
@@ -73,6 +101,7 @@ Route::group(['middleware' => [\App\Http\Middleware\InstalledMiddleware::class]]
             Route::get('/sms', \App\Livewire\Settings\SmsSettings::class)->name('settings.sms');
             Route::get('/theme', \App\Livewire\Settings\ThemeSettings::class)->name('settings.theme');
             Route::get('/file', \App\Livewire\Settings\FileTools::class)->name('settings.file');
+            Route::get('/printer', \App\Livewire\Settings\PrinterSettings::class)->name('settings.printer');
             Route::group(['prefix' => 'packages/'], function () {
                 Route::get('/', \App\Livewire\Packages\PackagesList::class)->name('packages.list');
                 Route::get('/manage/{id?}', \App\Livewire\Packages\PackageManage::class)->name('packages.manage');

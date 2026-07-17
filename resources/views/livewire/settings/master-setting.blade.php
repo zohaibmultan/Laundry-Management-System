@@ -260,6 +260,29 @@
             </div>
         </div>
         <div class="card-header border-top">
+            <h5 class="card-title mb-0">{{ $lang->data['invoice_footer_settings'] ?? 'Invoice Footer Settings' }}</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-sm-6">
+                    <div class="mb-20">
+                        <label for="invoice_footer_en" class="form-label fw-semibold text-primary-light text-sm mb-8">
+                            {{ $lang->data['invoice_footer_en'] ?? 'Invoice Footer (English)' }}
+                        </label>
+                        <textarea id="invoice_footer_en" class="form-control radius-8" rows="3" wire:model="invoice_footer_en"></textarea>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="mb-20">
+                        <label for="invoice_footer_ar" class="form-label fw-semibold text-primary-light text-sm mb-8">
+                            {{ $lang->data['invoice_footer_ar'] ?? 'Invoice Footer (Arabic)' }}
+                        </label>
+                        <textarea id="invoice_footer_ar" class="form-control radius-8" rows="3" style="direction: rtl;" wire:model="invoice_footer_ar"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-header border-top">
             <h5 class="card-title mb-0">{{ $lang->data['other_settings'] ?? 'Other Settings' }}</h5>
         </div>
         <div class="card-body ">

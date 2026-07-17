@@ -415,38 +415,82 @@
             border: none;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-        
+
         .btn-print-primary {
             color: #fff;
             background-color: #4f46e5;
         }
-        
+
         .btn-print-primary:hover {
             background-color: #4338ca;
         }
-        
+
         .btn-print-info {
             color: #fff;
             background-color: #0891b2;
         }
-        
+
         .btn-print-info:hover {
             background-color: #0e7490;
         }
-        
+
         .btn-print-secondary {
             color: #374151;
             background-color: #f3f4f6;
             border: 1px solid #d1d5db;
         }
-        
+
         .btn-print-secondary:hover {
             background-color: #e5e7eb;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
     </style>
 </head>
 
 <body>
+    <!-- Loading Overlay -->
+    <div id="print-loading-overlay"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.85); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; font-family: sans-serif;"
+        class="no-print">
+        <div
+            style="width: 50px; height: 50px; border: 5px solid #e0e7ff; border-top: 5px solid #4f46e5; border-radius: 50%; animation: spin 1s linear infinite;">
+        </div>
+        <div style="margin-top: 15px; font-weight: bold; color: #1e1b4b; font-size: 16px;">Sending print job...</div>
+    </div>
+
+    @php
+        $settings = new \App\Models\MasterSettings();
+        $siteData = $settings->siteData();
+        $invoicePrinter = $siteData['invoice_printer'] ?? '';
+        $clothTagPrinter = $siteData['cloth_tag_printer'] ?? '';
+    @endphp
+
+    <div style="text-align: center; margin: 15px 0 5px 0; font-family: sans-serif;" class="no-print">
+        <span id="qz-print-status"
+            style="font-weight: bold; padding: 4px 10px; border-radius: 4px; background: #fee2e2; color: #991b1b; font-size: 12px; display: inline-block;">
+            QZ Tray: Disconnected
+        </span>
+        <div style="margin-top: 8px; color: #4b5563; font-size: 12px;">
+            <div>
+                Invoice Printer:
+                <strong>{{ $invoicePrinter ?: 'System Dialog' }}</strong>
+            </div>
+            <div>
+                Cloth Tag Printer:
+                <strong>{{ $clothTagPrinter ?: 'System Dialog' }}</strong>
+            </div>
+        </div>
+    </div>
+
     <div style="display: flex; justify-content: center; gap: 20px; margin: 15px;" class="no-print">
         <button type="button" id="print_invoice" class="btn-print btn-print-primary">Print Invoice</button>
         <button type="button" id="print_tag" class="btn-print btn-print-info">Print Cloth Tag</button>
@@ -752,16 +796,10 @@
                     </div>
                 @endif
 
-                <div class="invoice_address">
-                    <div class="text-center">
-                        <div class="mt-0">
-                            {{ isset($site['default_thanks_message']) && !empty($site['default_thanks_message']) ? $site['default_thanks_message'] : '' }}
-                        </div>
-                        {{-- <p class="b_top">{{ $lang->data['powered_by'] ?? 'Powered By   ' }}
-                            <b>{{ getApplicationName() }}</b>
-                        </p> --}}
-                    </div>
+                <div style="border-top: 1px dashed #747272; padding-top: 5px; margin-bottom: 5px;">
+                    <img src="{{ asset('assets/img/ar-inst.png') }}" style="width: 100%" />
                 </div>
+
             </div>
         </div>
     </div>
@@ -778,20 +816,121 @@
         </div>
     </div>
 
+    @php
+        $settings = new \App\Models\MasterSettings();
+        $siteData = $settings->siteData();
+    @endphp
+
+    <script src="{{ asset('assets/js/lib/qz-tray.js') }}"></script>
     <script>
+        const invoicePrinter = @js($siteData['invoice_printer'] ?? '');
+        const clothTagPrinter = @js($siteData['cloth_tag_printer'] ?? '');
+
+        document.addEventListener('DOMContentLoaded', function() {
+            setQzSecurity();
+        });
+
+        function setQzSecurity() {
+            qz.security.setCertificatePromise((resolve, reject) =>
+                fetch('/qz/certificate').then(r => r.text()).then(resolve, reject));
+
+            qz.security.setSignatureAlgorithm("SHA512");
+            qz.security.setSignaturePromise(toSign => (resolve, reject) =>
+                fetch('/qz/sign?request=' + encodeURIComponent(toSign))
+                .then(r => {
+                    if (!r.ok) {
+                        return r.text().then(text => {
+                            throw new Error('Sign endpoint returned ' + r.status + ': ' + text);
+                        });
+                    }
+                    return r.text();
+                })
+                .then(resolve, reject));
+        }
+
+        function updateQZStatus(connected) {
+            const statusEl = document.getElementById("qz-print-status");
+            if (!statusEl) return;
+            statusEl.innerText = connected ? "QZ Tray: Connected" : "QZ Tray: Disconnected";
+            statusEl.style.background = connected ? "#d1fae5" : "#fee2e2";
+            statusEl.style.color = connected ? "#065f46" : "#991b1b";
+        }
+
+        function getQZConnection() {
+            if (!qz.websocket.isActive()) {
+                return qz.websocket.connect()
+                    .then(() => updateQZStatus(true))
+                    .catch(err => {
+                        updateQZStatus(false);
+                        throw err;
+                    });
+            }
+            return Promise.resolve();
+        }
+
+        getQZConnection().catch(() => {});
+
+        function buildPrintPayload(elementId) {
+            const element = document.getElementById(elementId);
+            const style = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+                .map(el => el.outerHTML)
+                .join('\n');
+            return [{
+                type: 'html',
+                format: 'plain',
+                data: `<div>${style} ${element.innerHTML}</div>`,
+            }];
+        }
+
+        function fallbackPrint(type) {
+            document.getElementById("invoice").style.display = type === "invoice" ? "block" : "none";
+            document.getElementById("cloth-tag").style.display = type === "invoice" ? "none" : "block";
+
+            // Show loading overlay, wait, trigger browser print, then hide overlay
+            document.getElementById("print-loading-overlay").style.display = "flex";
+            setTimeout(() => {
+                window.print();
+                document.getElementById("print-loading-overlay").style.display = "none";
+            }, 250);
+        }
+
         document.getElementById("print_invoice").addEventListener("click", () => {
-            document.getElementById("invoice").style.display = "block";
-            document.getElementById("cloth-tag").style.display = "none";
-            window.print();
+            if (!invoicePrinter) return fallbackPrint("invoice");
+
+            // Show loading spinner
+            document.getElementById("print-loading-overlay").style.display = "flex";
+
+            getQZConnection()
+                .then(() => qz.print(qz.configs.create(invoicePrinter), buildPrintPayload("invoice")))
+                .then(() => {
+                    document.getElementById("print-loading-overlay").style.display = "none";
+                })
+                .catch(err => {
+                    console.error('QZ print failed:', err);
+                    document.getElementById("print-loading-overlay").style.display = "none";
+                    fallbackPrint("invoice");
+                });
         });
+
         document.getElementById("print_tag").addEventListener("click", () => {
-            document.getElementById("invoice").style.display = "none";
-            document.getElementById("cloth-tag").style.display = "block";
-            window.print();
+            if (!clothTagPrinter) return fallbackPrint("tag");
+
+            // Show loading spinner
+            document.getElementById("print-loading-overlay").style.display = "flex";
+
+            getQZConnection()
+                .then(() => qz.print(qz.configs.create(clothTagPrinter), buildPrintPayload("cloth-tag")))
+                .then(() => {
+                    document.getElementById("print-loading-overlay").style.display = "none";
+                })
+                .catch(err => {
+                    console.error('QZ print failed:', err);
+                    document.getElementById("print-loading-overlay").style.display = "none";
+                    fallbackPrint("tag");
+                });
         });
-        document.getElementById("close").addEventListener("click", () => {
-            window.close();
-        });
+
+        document.getElementById("close").addEventListener("click", () => window.close());
     </script>
 </body>
 

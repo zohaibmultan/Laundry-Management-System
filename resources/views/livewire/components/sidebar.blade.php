@@ -244,6 +244,12 @@
                                 class="ri-circle-fill circle-icon text-primary-600 w-auto"></i> {{$lang->data['theme'] ?? 'Theme'}}</a>
                     </li>
                     @endcan
+                    @can('setting_master')
+                    <li>
+                        <a href="{{ route('settings.printer') }}"><i
+                                class="ri-circle-fill circle-icon text-primary-600 w-auto"></i>{{$lang->data['printer_settings'] ?? 'Printer Settings'}}</a>
+                    </li>
+                    @endcan
                 </ul>
             </li>
             @endcan

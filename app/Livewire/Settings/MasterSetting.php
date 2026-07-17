@@ -17,6 +17,7 @@ class MasterSetting extends Component
     public $default_currency, $default_application_name, $default_phone_number, $default_financial_year, $default_tax_percentage;
     public $default_state, $default_city, $default_district, $default_zip_code, $default_address, $user, $email, $password, $default_logo, $default_favicon, $default_currency_alignment = 1;
     public $old_favicon, $old_logo, $default_printer = 1, $lang, $country_code, $default_country, $store_tax, $store_email,$default_tax_mode;
+    public $invoice_footer_en, $invoice_footer_ar;
     use WithFileUploads;
     /* render the page */
     #[Title('Master Settings')]
@@ -56,6 +57,8 @@ class MasterSetting extends Component
         $this->store_email = (isset($site['store_email']) && !empty($site['store_email'])) ? $site['store_email'] : '';
         $this->default_printer = (isset($site['default_printer']) && !empty($site['default_printer'])) ? $site['default_printer'] : '';
         $this->default_currency_alignment = (isset($site['default_currency_alignment']) && !empty($site['default_currency_alignment'])) ? $site['default_currency_alignment'] : 1;
+        $this->invoice_footer_en = (isset($site['invoice_footer_en']) && !empty($site['invoice_footer_en'])) ? $site['invoice_footer_en'] : '';
+        $this->invoice_footer_ar = (isset($site['invoice_footer_ar']) && !empty($site['invoice_footer_ar'])) ? $site['invoice_footer_ar'] : '';
         if (session()->has('selected_language')) {   /*if session has selected language */
             $this->lang = Translation::where('id', session()->get('selected_language'))->first();
         } else {
@@ -69,26 +72,34 @@ class MasterSetting extends Component
     /* save the master settings data */
     public function save()
     {
-        $this->validate([
-            'default_currency' => 'required',
-            'default_currency_alignment' => 'required',
-            'default_application_name' => 'required',
-            'default_phone_number' => 'required',
-            'default_financial_year' => 'required',
-            'default_tax_percentage' => 'required',
-            'default_state' => 'required',
-            'default_city' => 'required',
-            'default_district' => 'required',
-            'default_zip_code' => 'required',
-            'default_address' => 'required',
-            'default_country' => 'required',
-            'store_email'   => 'required',
-            'store_tax' => 'required',
-            'email' => 'required|email|unique:users',
-            'email' => ['required', 'email', Rule::unique('users')->ignore($this->user->id)],
-            'default_printer' => 'required',
-            'country_code'  => 'required'
-        ]);
+        try {
+            $this->validate([
+                'default_currency' => 'required',
+                'default_currency_alignment' => 'required',
+                'default_application_name' => 'required',
+                'default_phone_number' => 'required',
+                'default_financial_year' => 'required',
+                'default_tax_percentage' => 'required',
+                'default_state' => 'required',
+                'default_city' => 'required',
+                'default_district' => 'required',
+                'default_zip_code' => 'required',
+                'default_address' => 'required',
+                'default_country' => 'required',
+                'store_email'   => 'required',
+                'store_tax' => 'required',
+                'email' => ['required', 'email', Rule::unique('users')->ignore($this->user->id)],
+                'default_printer' => 'required',
+                'country_code'  => 'required'
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $firstError = collect($e->errors())->flatten()->first();
+            $this->dispatch(
+                'alert',
+                ['type' => 'error', 'message' => 'Validation Failed: ' . $firstError]
+            );
+            throw $e;
+        }
 
         $settings = new MasterSettings();
         $site = $settings->siteData();
@@ -107,8 +118,11 @@ class MasterSetting extends Component
         $site['store_tax_number'] = $this->store_tax;
         $site['store_email'] = $this->store_email;
         $site['default_printer'] = $this->default_printer;
+        $this->country_code = $this->country_code;
         $site['country_code'] = $this->country_code;
         $site['default_currency_alignment'] = $this->default_currency_alignment;
+        $site['invoice_footer_en'] = $this->invoice_footer_en;
+        $site['invoice_footer_ar'] = $this->invoice_footer_ar;
         if ($this->default_logo) {
             $default_logo = $this->default_logo;
             $input['file'] = time() . '.' . $default_logo->getClientOriginalExtension();

@@ -206,3 +206,47 @@ string values by Livewire's wire:model on checkboxes.
 - Form recalculation logic.
 - Component-to-view binding cleanup.
 - Validation and permission checks.
+
+## QZ Tray Printing Integration Pattern
+
+When integrating QZ Tray for silent/secure thermal label or receipt printing:
+
+1. **Certificate & Signature Routes**:
+   Define light, CSRF-free `GET` routes for fetching the digital certificate and signing requests to prevent handshake blockages:
+   ```php
+   Route::get('/qz/certificate', function () {
+       return response(file_get_contents(storage_path('app/qz/digital-certificate.txt')))
+           ->header('Content-Type', 'text/plain');
+   })->name('qz.certificate');
+
+   Route::get('/qz/sign', function (\Illuminate\Http\Request $request) {
+       $req = $request->input('request');
+       $privateKey = file_get_contents(storage_path('app/qz/private-key.pem'));
+       $key = openssl_get_privatekey($privateKey);
+       openssl_sign($req, $signature, $key, OPENSSL_ALGO_SHA512);
+       return response(base64_encode($signature), 200)
+           ->header('Content-Type', 'text/plain');
+   })->name('qz.sign');
+   ```
+
+2. **Frontend Security Setup**:
+   Configure QZ Tray to fetch the certificate and signatures asynchronously from these endpoints:
+   ```javascript
+   qz.security.setCertificatePromise((resolve, reject) =>
+       fetch('/qz/certificate').then(r => r.text()).then(resolve, reject)
+   );
+
+   qz.security.setSignatureAlgorithm("SHA512");
+   qz.security.setSignaturePromise(toSign => (resolve, reject) =>
+       fetch('/qz/sign?request=' + encodeURIComponent(toSign))
+           .then(r => {
+               if (!r.ok) {
+                   return r.text().then(text => {
+                       throw new Error('Sign endpoint returned ' + r.status + ': ' + text);
+                   });
+               }
+               return r.text();
+           })
+           .then(resolve, reject)
+   );
+   ```
