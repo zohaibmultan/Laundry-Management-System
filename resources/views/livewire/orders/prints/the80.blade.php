@@ -444,6 +444,17 @@
             background-color: #e5e7eb;
         }
 
+        .btn-print-whatsapp {
+            color: #ffffff;
+            background-color: #25D366;
+            border: 1px solid #25D366;
+        }
+
+        .btn-print-whatsapp:hover {
+            background-color: #128C7E;
+            border-color: #128C7E;
+        }
+
         @keyframes spin {
             0% {
                 transform: rotate(0deg);
@@ -465,6 +476,25 @@
             style="width: 50px; height: 50px; border: 5px solid #e0e7ff; border-top: 5px solid #4f46e5; border-radius: 50%; animation: spin 1s linear infinite;">
         </div>
         <div style="margin-top: 15px; font-weight: bold; color: #1e1b4b; font-size: 16px;">Sending print job...</div>
+    </div>
+
+    <!-- WhatsApp Phone Prompt Overlay -->
+    <div id="whatsapp-phone-modal"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 9999; justify-content: center; align-items: center; font-family: sans-serif;"
+        class="no-print">
+        <div
+            style="background: #fff; padding: 22px 25px; border-radius: 10px; width: 90%; max-width: 380px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center;">
+            <h4 style="margin: 0 0 8px 0; color: #1e293b; font-size: 18px;">Send WhatsApp Invoice</h4>
+            <p style="color: #64748b; font-size: 13px; margin: 0 0 15px 0;">Customer phone number is missing. Please enter phone number below:</p>
+            <input type="text" id="whatsapp_input_phone" placeholder="e.g. 31322131"
+                style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; box-sizing: border-box; outline: none; margin-bottom: 18px;" />
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" id="whatsapp_cancel_btn"
+                    style="padding: 8px 16px; border: 1px solid #cbd5e1; background: #f1f5f9; color: #334155; border-radius: 6px; cursor: pointer; font-size: 13px;">Cancel</button>
+                <button type="button" id="whatsapp_confirm_send_btn"
+                    style="padding: 8px 16px; border: none; background: #25D366; color: #fff; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold;">Send Message</button>
+            </div>
+        </div>
     </div>
 
     @php
@@ -491,9 +521,15 @@
         </div>
     </div>
 
-    <div style="display: flex; justify-content: center; gap: 20px; margin: 15px;" class="no-print">
+    <div style="display: flex; justify-content: center; gap: 15px; margin: 15px; flex-wrap: wrap;" class="no-print">
         <button type="button" id="print_invoice" class="btn-print btn-print-primary">Print Invoice</button>
         <button type="button" id="print_tag" class="btn-print btn-print-info">Print Cloth Tag</button>
+        <button type="button" id="send_whatsapp" class="btn-print btn-print-whatsapp" style="display: inline-flex; align-items: center; gap: 6px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.384-.323-.333-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.707 2.004.807 2.137c.099.134 1.39 2.123 3.368 2.975.47.203.837.324 1.124.415.472.15.901.129 1.24.078.378-.058 1.17-.478 1.336-.94.167-.463.167-.859.117-.94-.05-.083-.182-.133-.38-.232z"/>
+            </svg>
+            Send Invoice
+        </button>
         <button type="button" id="close" class="btn-print btn-print-secondary">Close</button>
     </div>
     <div class="page-wrapper" style="padding:5px" id="invoice">
@@ -929,6 +965,85 @@
                     fallbackPrint("tag");
                 });
         });
+
+        function sendWhatsAppMessage(phone) {
+            const customerName = @js($customer->name ?? ($lang->data['walk_in_customer'] ?? 'Customer'));
+            const orderNumber = @js($order->order_number);
+            const orderTotal = @js(getFormattedCurrency($order->total));
+            const orderDate = @js(\Carbon\Carbon::parse($order->order_date)->format('d/m/Y'));
+            const appName = @js($sitename ?? 'LaundryBox');
+            const storeCountryCode = @js(preg_replace('/[^\d]/', '', $siteData['country_code'] ?? ''));
+
+            if (!phone || !phone.trim()) {
+                alert("Please enter a valid phone number.");
+                return false;
+            }
+
+            let cleanPhone = phone.replace(/[^\d]/g, '');
+
+            if (!cleanPhone) {
+                alert("Please enter a valid phone number.");
+                return false;
+            }
+
+            // Prepend country code if local 8-digit number
+            if (storeCountryCode && !cleanPhone.startsWith(storeCountryCode) && cleanPhone.length <= 8) {
+                cleanPhone = storeCountryCode + cleanPhone;
+            }
+
+            const message = `Hello ${customerName},\n\nThank you for choosing ${appName}! Here are your order details:\n\n*Order No:* #${orderNumber}\n*Order Date:* ${orderDate}\n*Total Amount:* ${orderTotal}\n\nThank you for your business!`;
+
+            const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+            window.open(whatsappUrl, '_blank');
+            return true;
+        }
+
+        const whatsappBtn = document.getElementById("send_whatsapp");
+        const phoneModal = document.getElementById("whatsapp-phone-modal");
+        const phoneInput = document.getElementById("whatsapp_input_phone");
+        const cancelBtn = document.getElementById("whatsapp_cancel_btn");
+        const confirmSendBtn = document.getElementById("whatsapp_confirm_send_btn");
+
+        if (whatsappBtn) {
+            whatsappBtn.addEventListener("click", () => {
+                const initialPhone = @js($customer && $customer->phone ? $customer->phone : '');
+                if (initialPhone && initialPhone.trim()) {
+                    sendWhatsAppMessage(initialPhone);
+                } else {
+                    if (phoneModal) {
+                        phoneModal.style.display = "flex";
+                        if (phoneInput) {
+                            phoneInput.value = "";
+                            setTimeout(() => phoneInput.focus(), 100);
+                        }
+                    }
+                }
+            });
+        }
+
+        if (cancelBtn) {
+            cancelBtn.addEventListener("click", () => {
+                if (phoneModal) phoneModal.style.display = "none";
+            });
+        }
+
+        if (confirmSendBtn) {
+            confirmSendBtn.addEventListener("click", () => {
+                if (phoneInput && sendWhatsAppMessage(phoneInput.value)) {
+                    if (phoneModal) phoneModal.style.display = "none";
+                }
+            });
+        }
+
+        if (phoneInput) {
+            phoneInput.addEventListener("keydown", (e) => {
+                if (e.key === "Enter") {
+                    if (sendWhatsAppMessage(phoneInput.value)) {
+                        if (phoneModal) phoneModal.style.display = "none";
+                    }
+                }
+            });
+        }
 
         document.getElementById("close").addEventListener("click", () => window.close());
     </script>
