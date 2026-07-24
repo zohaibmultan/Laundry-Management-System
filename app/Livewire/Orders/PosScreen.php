@@ -3,36 +3,141 @@
 namespace App\Livewire\Orders;
 
 use App\Livewire\Installer\InstallController;
-use Livewire\Component;
-
 use App\Models\Addon;
 use App\Models\Customer;
 use App\Models\CustomerPackage;
 use App\Models\Order;
+use App\Models\OrderAddonDetail;
 use App\Models\OrderDetail;
 use App\Models\Payment;
 use App\Models\Service;
 use App\Models\ServiceDetail;
 use App\Models\ServiceType;
-use App\Models\OrderAddonDetail;
 use App\Models\Translation;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
+use Livewire\Component;
 
 class PosScreen extends Component
 {
-    public $services, $search_query, $order_id, $inputs = [], $selservices = [], $customer, $date, $delivery_date, $discount, $paid_amount, $payment_type = 1;
-    public $payment_notes, $service_types, $service, $inputi, $prices = [], $selling_price = [], $quantity = [], $selected_type = [], $addons, $selected_addons = [], $colors = [];
-    public $customer_name, $customer_phone, $email, $tax_no, $address, $selected_customer, $customers, $customer_query, $is_active = 1;
-    public $name, $phone, $tax_number;
-    public $customer_packages, $selected_customer_package_id, $selected_customer_package;
-    public $package_service_detail_ids = [], $package_service_type_ids = [], $package_service_ids = [], $package_total_quantity = 0, $package_remaining_quantity = 0;
-    public $total, $sub_total, $addon_total, $tax_percent, $tax, $balance, $flag = 0, $lang,$taxamount;
-    public $taxable,$order;
-    public $payments = [],$payment_amount,$notes;
+    public $services;
+
+    public $search_query;
+
+    public $order_id;
+
+    public $inputs = [];
+
+    public $selservices = [];
+
+    public $customer;
+
+    public $date;
+
+    public $delivery_date;
+
+    public $discount;
+
+    public $paid_amount;
+
+    public $payment_type = 1;
+
+    public $payment_notes;
+
+    public $service_types;
+
+    public $service;
+
+    public $inputi;
+
+    public $prices = [];
+
+    public $selling_price = [];
+
+    public $quantity = [];
+
+    public $selected_type = [];
+
+    public $addons;
+
+    public $selected_addons = [];
+
+    public $colors = [];
+
+    public $customer_name;
+
+    public $customer_phone;
+
+    public $email;
+
+    public $tax_no;
+
+    public $address;
+
+    public $selected_customer;
+
+    public $customers;
+
+    public $customer_query;
+
+    public $is_active = 1;
+
+    public $name;
+
+    public $phone;
+
+    public $tax_number;
+
+    public $customer_packages;
+
+    public $selected_customer_package_id;
+
+    public $selected_customer_package;
+
+    public $package_service_detail_ids = [];
+
+    public $package_service_type_ids = [];
+
+    public $package_service_ids = [];
+
+    public $package_total_quantity = 0;
+
+    public $package_remaining_quantity = 0;
+
+    public $total;
+
+    public $sub_total;
+
+    public $addon_total;
+
+    public $tax_percent;
+
+    public $tax;
+
+    public $balance;
+
+    public $flag = 0;
+
+    public $lang;
+
+    public $taxamount;
+
+    public $taxable;
+
+    public $order;
+
+    public $payments = [];
+
+    public $payment_amount;
+
+    public $notes;
+
+    public $selected_user_id;
+
+    public $active_users;
 
     #[Layout('components.layouts.pos'),Title('POS')]
     public function render()
@@ -45,7 +150,7 @@ class PosScreen extends Component
         $query = Service::where('is_active', 1)->latest();
 
         if ($this->search_query) {
-            $query->where('service_name', 'like', '%' . $this->search_query . '%');
+            $query->where('service_name', 'like', '%'.$this->search_query.'%');
         }
 
         if ($this->selected_customer_package) {
@@ -59,6 +164,7 @@ class PosScreen extends Component
     {
         if (! $this->selected_customer) {
             $this->customer_packages = collect();
+
             return;
         }
 
@@ -70,14 +176,15 @@ class PosScreen extends Component
             ->latest()
             ->get()
             ->filter(function ($customerPackage) {
-                if (!$customerPackage->package || !$customerPackage->created_at) {
+                if (! $customerPackage->package || ! $customerPackage->created_at) {
                     return false;
                 }
                 if ($this->selected_customer_package_id && $customerPackage->id == $this->selected_customer_package_id) {
                     return true;
                 }
                 $expireDate = \Carbon\Carbon::parse($customerPackage->created_at)->addDays($customerPackage->package->duration);
-                return !$expireDate->isPast();
+
+                return ! $expireDate->isPast();
             });
     }
 
@@ -127,6 +234,7 @@ class PosScreen extends Component
 
         if (! $customerPackageId) {
             $this->loadServices();
+
             return;
         }
 
@@ -136,6 +244,7 @@ class PosScreen extends Component
 
         if (! $customerPackage || ! $customerPackage->package) {
             $this->loadServices();
+
             return;
         }
 
@@ -155,6 +264,7 @@ class PosScreen extends Component
     {
         if (empty($this->package_service_type_ids)) {
             $this->calculateTotal();
+
             return;
         }
 
@@ -185,6 +295,7 @@ class PosScreen extends Component
     {
         if (! $this->selected_customer_package || $this->package_total_quantity <= 0) {
             $this->package_remaining_quantity = 0;
+
             return;
         }
 
@@ -194,18 +305,18 @@ class PosScreen extends Component
         // Calculate quantity used in OTHER orders this week
         $query = OrderDetail::whereHas('order', function ($q) use ($startOfWeek, $endOfWeek) {
             $q->where('customer_package_id', $this->selected_customer_package->id)
-              ->whereBetween('order_date', [$startOfWeek, $endOfWeek]);
+                ->whereBetween('order_date', [$startOfWeek, $endOfWeek]);
             if ($this->order) {
                 $q->where('id', '!=', $this->order->id);
             }
         });
 
-        if (!empty($this->package_service_ids)) {
+        if (! empty($this->package_service_ids)) {
             $query->whereIn('service_id', $this->package_service_ids);
         }
 
         $allowedServiceTypeNames = ServiceType::whereIn('id', $this->package_service_type_ids)->pluck('service_type_name')->toArray();
-        if (!empty($allowedServiceTypeNames)) {
+        if (! empty($allowedServiceTypeNames)) {
             $query->whereIn('service_name', $allowedServiceTypeNames);
         }
 
@@ -239,17 +350,17 @@ class PosScreen extends Component
         // Calculate quantity used in OTHER orders this week (if editing, exclude current order)
         $query = OrderDetail::whereHas('order', function ($q) use ($customerPackage, $startOfWeek, $endOfWeek) {
             $q->where('customer_package_id', $customerPackage->id)
-              ->whereBetween('order_date', [$startOfWeek, $endOfWeek]);
+                ->whereBetween('order_date', [$startOfWeek, $endOfWeek]);
             if ($this->order) {
                 $q->where('id', '!=', $this->order->id);
             }
         });
 
         // Only count details matching the package's services
-        if (!empty($serviceIds)) {
+        if (! empty($serviceIds)) {
             $query->whereIn('service_id', $serviceIds);
         }
-        if (!empty($allowedServiceTypeNames)) {
+        if (! empty($allowedServiceTypeNames)) {
             $query->whereIn('service_name', $allowedServiceTypeNames);
         }
 
@@ -269,12 +380,12 @@ class PosScreen extends Component
         $totalQuantity = (int) ($customerPackage->package->items_per_week ?? 0);
         $remainingQuantity = max($totalQuantity - $usedQuantity, 0);
 
-        return $remainingQuantity . '/' . $totalQuantity;
+        return $remainingQuantity.'/'.$totalQuantity;
     }
 
     public function mount($id = null)
     {
-        if(!\Illuminate\Support\Facades\Gate::allows('order_create')){
+        if (! \Illuminate\Support\Facades\Gate::allows('order_create')) {
             abort(404);
         }
         // $posManager = new InstallController();
@@ -290,18 +401,17 @@ class PosScreen extends Component
         $this->tax_percent = getTaxPercentage();
         $this->generateOrderID();
 
-        if($id)
-        {
+        if ($id) {
             $this->order = Order::whereId($id)->firstOrFail();
             $payments = Payment::where('order_id', $this->order->id)->get();
-            foreach($payments as $payment){
-                array_push($this->payments,[
+            foreach ($payments as $payment) {
+                array_push($this->payments, [
                     'payment_type' => $payment->payment_type,
                     'amount' => $payment->received_amount,
-                    'notes' => $payment->notes
+                    'notes' => $payment->notes,
                 ]);
             }
-            if ($this->order->customer_id && $this->order->customer_id != NULL) {
+            if ($this->order->customer_id && $this->order->customer_id != null) {
                 $this->selectCustomer($this->order->customer_id);
                 $this->selected_customer_package_id = $this->order->customer_package_id;
                 $this->applySelectedCustomerPackage($this->selected_customer_package_id);
@@ -327,26 +437,49 @@ class PosScreen extends Component
             $this->lang = Translation::where('default', 1)->first();
         }
         $this->service_types = collect();
+
+        $currentUser = Auth::user();
+        if ($currentUser->user_type == 1 || $currentUser->user_type === null) {
+            $this->active_users = \App\Models\User::where('is_active', 1)
+                ->where(function ($query) {
+                    $query->whereIn('user_type', [1])
+                        ->orWhereNull('user_type')
+                        ->orWhereHas('role.permissions', function ($q) {
+                            $q->where('permission_name', 'order_create');
+                        });
+                })
+                ->get();
+        } else {
+            $this->active_users = collect();
+        }
+
+        if ($id && $this->order) {
+            $this->selected_user_id = $this->order->created_by;
+        } else {
+            $this->selected_user_id = $currentUser->id;
+        }
+
         $this->calculateTotal();
     }
 
-    public function editItem($row){
+    public function editItem($row)
+    {
         $this->add($this->inputi);
         $service = Service::whereId($row->service_id)->first();
         $servicedetails = ServiceDetail::where('service_id', $service->id)->first();
-        $serviceType = ServiceType::where('service_type_name',$row->service_name)->first();
+        $serviceType = ServiceType::where('service_type_name', $row->service_name)->first();
         $servicedetail = $servicedetails->where('service_type_id', $serviceType?->id)->where('service_id', $service->id)->first();
         if ($servicedetail) {
             $this->selservices[$this->inputi]['service'] = $service->id;
-            $this->selservices[$this->inputi]['service_type']  = $serviceType?->id;
+            $this->selservices[$this->inputi]['service_type'] = $serviceType?->id;
 
             if ($this->order->tax_type == 2) {
-                $this->selling_price[$this->inputi] =  $servicedetail->service_price;
-                $itemtotallocal =   $servicedetail->service_price  * (100 / (100 + $this->tax_percent ?? 0));
+                $this->selling_price[$this->inputi] = $servicedetail->service_price;
+                $itemtotallocal = $servicedetail->service_price * (100 / (100 + $this->tax_percent ?? 0));
                 $this->prices[$this->inputi] = number_format($itemtotallocal, 2);
             } else {
-                $this->prices[$this->inputi] =  $servicedetail->service_price;
-                $this->selling_price[$this->inputi] =  $servicedetail->service_price;
+                $this->prices[$this->inputi] = $servicedetail->service_price;
+                $this->selling_price[$this->inputi] = $servicedetail->service_price;
             }
 
             $this->colors[$this->inputi] = $row->color_code;
@@ -361,13 +494,15 @@ class PosScreen extends Component
     {
         $this->colors[$id] = $this->colors[$id];
     }
-    
+
     /* process while update element */
     public function updated($name, $value)
     {
 
         /* if updated value is empty set the value as null */
-        if ($value == '') data_set($this, $name, null);
+        if ($value == '') {
+            data_set($this, $name, null);
+        }
 
         if ($name == 'selected_customer_package_id') {
             $this->applySelectedCustomerPackage($value);
@@ -382,7 +517,7 @@ class PosScreen extends Component
         /* if the updated value is customer_query */
         if ($name == 'customer_query' && $value != '') {
             $this->customers = Customer::where(function ($query) use ($value) {
-                $query->where('name', 'like', '%' . $value . '%')->orWhere('phone', 'like', '%' . $value . '%');
+                $query->where('name', 'like', '%'.$value.'%')->orWhere('phone', 'like', '%'.$value.'%');
             })->latest()->limit(5)->get();
         } elseif ($name == 'customer_query' && $value == '') {
             $this->customers = collect();
@@ -399,12 +534,12 @@ class PosScreen extends Component
         $this->applySelectedCustomerPackage($value);
     }
 
-
     /* select service */
     public function selectService($id)
     {
         if (! empty($this->package_service_ids) && ! in_array((int) $id, array_map('intval', $this->package_service_ids), true)) {
             $this->dispatch('alert', ['type' => 'error', 'message' => 'This service is not available in the selected package.']);
+
             return;
         }
 
@@ -427,47 +562,49 @@ class PosScreen extends Component
             if (count($this->service_types) > 0) {
                 $first = $this->service_types->first();
                 if ($first) {
-                    $this->selected_type [$first['id']] = true;
+                    $this->selected_type[$first['id']] = true;
                 }
             }
         }
         $this->calculateTotal();
     }
+
     /* select services*/
     public function addItem()
     {
         if ($this->selected_customer_package && $this->package_remaining_quantity <= 0) {
             $this->dispatch('alert', ['type' => 'error', 'message' => 'Weekly package limit reached. Cannot add more items.']);
+
             return 0;
         }
 
         if ($this->service) {
             $anyTicked = false;
-            foreach($this->selected_type as $item){
-                if($item == true){
+            foreach ($this->selected_type as $item) {
+                if ($item == true) {
                     $anyTicked = true;
                 }
             }
             if (count($this->selected_type) > 0 && $anyTicked) {
                 $tax_type = getTaxType();
-                foreach($this->selected_type as $item => $value){
-                    if($value === true){
+                foreach ($this->selected_type as $item => $value) {
+                    if ($value === true) {
                         if (! empty($this->package_service_type_ids) && ! in_array((int) $item, array_map('intval', $this->package_service_type_ids), true)) {
                             continue;
                         }
                         $this->add($this->inputi);
                         $this->selservices[$this->inputi]['service'] = $this->service->id;
-                        $this->selservices[$this->inputi]['service_type']  = $item;
+                        $this->selservices[$this->inputi]['service_type'] = $item;
                         $servicedetail = ServiceDetail::where('service_id', $this->service->id)->where('service_type_id', $item)->first();
                         /* if service details is not empty */
                         if ($servicedetail) {
                             if ($tax_type == 2) {
-                                $this->selling_price[$this->inputi] =  $servicedetail->service_price;
-                                $itemtotallocal =   $servicedetail->service_price  * (100 / (100 + $this->tax_percent ?? 0));
+                                $this->selling_price[$this->inputi] = $servicedetail->service_price;
+                                $itemtotallocal = $servicedetail->service_price * (100 / (100 + $this->tax_percent ?? 0));
                                 $this->prices[$this->inputi] = number_format($itemtotallocal, 2);
                             } else {
-                                $this->prices[$this->inputi] =  $servicedetail->service_price;
-                                $this->selling_price[$this->inputi] =  $servicedetail->service_price;
+                                $this->prices[$this->inputi] = $servicedetail->service_price;
+                                $this->selling_price[$this->inputi] = $servicedetail->service_price;
                             }
                         }
                     }
@@ -477,10 +614,12 @@ class PosScreen extends Component
                 $this->syncCartPricesForSelectedPackage();
             } else {
                 $this->addError('service_error', 'Select a service type');
+
                 return 0;
             }
         }
     }
+
     /* add the item to array */
     public function add($i)
     {
@@ -488,9 +627,10 @@ class PosScreen extends Component
         $this->inputs[$this->inputi] = 1;
         $this->prices[$this->inputi] = 100;
         $this->service_types[$this->inputi] = '';
-        $this->quantity[$this->inputi]  = 1;
-        $this->colors[$this->inputi]  = '';
+        $this->quantity[$this->inputi] = 1;
+        $this->colors[$this->inputi] = '';
     }
+
     /* increase the count */
     public function increase($key)
     {
@@ -509,6 +649,7 @@ class PosScreen extends Component
     {
         $this->calculateTotal();
     }
+
     /* decrease the count */
     public function decrease($key)
     {
@@ -529,6 +670,7 @@ class PosScreen extends Component
             $this->refreshPackageRemainingQuantity();
         }
     }
+
     public function removeItem($key)
     {
         unset($this->quantity[$key]);
@@ -539,21 +681,22 @@ class PosScreen extends Component
         $this->calculateTotal();
         $this->refreshPackageRemainingQuantity();
     }
+
     /* create customer */
     public function createCustomer()
     {   /* validation */
         $this->validate([
-            'customer_name'  => 'required',
-            'customer_phone'    => 'required',
-            'email' => 'unique:customers|nullable'
+            'customer_name' => 'required',
+            'customer_phone' => 'required',
+            'email' => 'unique:customers|nullable',
 
         ]);
         $customer = Customer::create([
-            'name'  => $this->customer_name,
+            'name' => $this->customer_name,
             'phone' => $this->customer_phone,
             'email' => $this->email,
-            'tax_number'    => $this->tax_no,
-            'address'   => $this->address,
+            'tax_number' => $this->tax_no,
+            'address' => $this->address,
             'is_active' => $this->is_active ?? 0,
         ]);
         $this->selected_customer = $customer;
@@ -563,12 +706,12 @@ class PosScreen extends Component
         $this->dispatch('closemodal');
         $this->customer_name = '';
         $this->customer_phone = '';
-        $this->email    = '';
+        $this->email = '';
         $this->tax_no = '';
         $this->address = '';
         $this->is_active = 1;
     }
-    
+
     /* reset input fields for shared customer creation modal */
     public function resetInputFields()
     {
@@ -587,15 +730,15 @@ class PosScreen extends Component
         $this->validate([
             'name' => 'required',
             'phone' => 'required',
-            'email' => 'nullable|email|unique:customers'
+            'email' => 'nullable|email|unique:customers',
         ]);
 
         $customer = Customer::create([
-            'name'  => $this->name,
+            'name' => $this->name,
             'phone' => $this->phone,
             'email' => $this->email,
-            'tax_number'    => $this->tax_number,
-            'address'   => $this->address,
+            'tax_number' => $this->tax_number,
+            'address' => $this->address,
             'is_active' => $this->is_active ?? 0,
         ]);
 
@@ -631,23 +774,25 @@ class PosScreen extends Component
         $this->customer_query = '';
         $this->customers = collect();
     }
+
     /* generate order Id */
     public function generateOrderID()
     {
         $code_prefix = 'ORD-';
         $ordernumber = Order::Orderby('id', 'desc')->first();
         /*if order number is exist*/
-        if ($ordernumber && $ordernumber->order_number != "") {
+        if ($ordernumber && $ordernumber->order_number != '') {
             /* if invoice code not empty */
-            $code = explode("-", $ordernumber->order_number);
+            $code = explode('-', $ordernumber->order_number);
             $new_code = $code[1] + 1;
-            $new_code = str_pad($new_code, 4, "0", STR_PAD_LEFT);
-            $this->order_id = $code_prefix . $new_code;
+            $new_code = str_pad($new_code, 4, '0', STR_PAD_LEFT);
+            $this->order_id = $code_prefix.$new_code;
         } else {
             /* if order code is empty set start */
-            $this->order_id = $code_prefix . '0001';
+            $this->order_id = $code_prefix.'0001';
         }
     }
+
     /* calculate service total */
     public function calculateTotal()
     {
@@ -675,15 +820,15 @@ class PosScreen extends Component
             $this->sub_total += $effectivePrice * $this->quantity[$key];
             $itemtaxtotal = 0;
             if ($tax_type == 2) {
-                $itemtotallocal =  ($effectivePrice * $this->quantity[$key])  * (100 / (100 + $this->tax_percent ?? 0));
-                $itemtaxtotal +=  ($effectivePrice * $this->quantity[$key]) - $itemtotallocal ?? 0;
+                $itemtotallocal = ($effectivePrice * $this->quantity[$key]) * (100 / (100 + $this->tax_percent ?? 0));
+                $itemtaxtotal += ($effectivePrice * $this->quantity[$key]) - $itemtotallocal ?? 0;
 
                 $itemtotal += ($effectivePrice * $this->quantity[$key]);
                 $itemtaxtotal2 += $itemtaxtotal;
                 $this->taxable += $itemtotal;
                 $sub_total += $itemtotallocal;
             } else {
-                $itemtotallocal =  ($effectivePrice * $this->quantity[$key]);
+                $itemtotallocal = ($effectivePrice * $this->quantity[$key]);
                 $itemtaxtotal += $itemtotallocal * $this->tax_percent / 100;
                 $itemtotal += $itemtotallocal + $itemtaxtotal;
                 $itemtaxtotal2 += $itemtaxtotal;
@@ -699,15 +844,15 @@ class PosScreen extends Component
                     $itemtaxtotal = 0;
                     $addon = Addon::where('id', $key)->first();
                     if ($tax_type == 2) {
-                        $itemtotallocal =  ($addon->addon_price)  * (100 / (100 + $this->tax_percent ?? 0));
-                        $itemtaxtotal +=  ($addon->addon_price) - $itemtotallocal ?? 0;
-                        $itemtotal +=  ($addon->addon_price);
+                        $itemtotallocal = ($addon->addon_price) * (100 / (100 + $this->tax_percent ?? 0));
+                        $itemtaxtotal += ($addon->addon_price) - $itemtotallocal ?? 0;
+                        $itemtotal += ($addon->addon_price);
                         $itemtaxtotal2 += $itemtaxtotal;
                         $this->taxable += $itemtotal;
                         $sub_total += $itemtotallocal;
                         $this->addon_total += $itemtotallocal;
                     } else {
-                        $itemtotallocal =   ($addon->addon_price);
+                        $itemtotallocal = ($addon->addon_price);
                         $itemtaxtotal += $itemtotallocal * $this->tax_percent / 100;
                         $itemtotal += $itemtotallocal + $itemtaxtotal;
                         $itemtaxtotal2 += $itemtaxtotal;
@@ -721,26 +866,28 @@ class PosScreen extends Component
         $this->sub_total = $sub_total;
         $this->tax = $itemtaxtotal2;
         $this->total = ($this->sub_total + $itemtaxtotal2) - $this->discount;
-        $this->total = round($this->total,3,PHP_ROUND_HALF_UP);
+        $this->total = round($this->total, 3, PHP_ROUND_HALF_UP);
         $this->balance = $this->total - $this->paid_amount;
     }
+
     //add payment
-    public function add_payment(){
+    public function add_payment()
+    {
         $this->validate([
-            'payment_type'  => 'required',
-            'payment_amount' => 'lte:'.$this->getPaymentBalance()
+            'payment_type' => 'required',
+            'payment_amount' => 'lte:'.$this->getPaymentBalance(),
         ]);
 
         $payment = [
-            'amount' => (float)$this->payment_amount,
+            'amount' => (float) $this->payment_amount,
             'notes' => $this->notes,
             'payment_type' => $this->payment_type,
-            'payment_id' => null
+            'payment_id' => null,
         ];
         $this->payment_amount = '';
         $this->notes = '';
         $this->payment_type = 1;
-        array_push($this->payments,$payment);
+        array_push($this->payments, $payment);
         $this->dispatch(
             'alert',
             ['type' => 'success',  'message' => ' Payment has been created']
@@ -748,7 +895,8 @@ class PosScreen extends Component
     }
 
     #[Computed()]
-    public function currentBalance(){
+    public function currentBalance()
+    {
         return $this->getPaymentBalance();
     }
 
@@ -756,19 +904,19 @@ class PosScreen extends Component
     public function save($type = null)
     {
         $amount = 0;
-        if($type === 'cash'){
+        if ($type === 'cash') {
             $this->payments = [];
-            array_push($this->payments,[
+            array_push($this->payments, [
                 'amount' => $this->total,
                 'notes' => $this->payment_notes,
                 'payment_type' => $this->payment_type,
-                'payment_id' => null
+                'payment_id' => null,
             ]);
         }
         $this->calculateTotal();
 
         $this->validate([
-            'payment_type'  => 'required'
+            'payment_type' => 'required',
         ]);
         /* if selected services > 0  send error alert*/
         if (count($this->selservices) <= 0) {
@@ -777,6 +925,7 @@ class PosScreen extends Component
                 ['type' => 'error',  'message' => ' You have not added any service to the cart']
             );
             $this->addError('error', 'Select a service');
+
             return 0;
         }
         $balance = $this->getPaymentBalance();
@@ -787,70 +936,71 @@ class PosScreen extends Component
                 ['type' => 'error',  'message' => ' Paid Amount cannot be greater than total.']
             );
             $this->addError('paid_amount', 'Paid Amount cannot be greater than total.');
+
             return 0;
         }
         /* if customer not exist and has any balance to pay send the error alert */
         if ($balance != 0 && $this->selected_customer == null) {
             $this->addError('paid_amount_customer', 'The customer must be registered to use ledger.');
+
             return 0;
         }
-        if ($this->selected_customer && $this->customer_packages && count($this->customer_packages) > 0 && !$this->selected_customer_package_id) {
+        if ($this->selected_customer && $this->customer_packages && count($this->customer_packages) > 0 && ! $this->selected_customer_package_id) {
             $this->addError('customer_package_id', 'Select a package.');
+
             return 0;
         }
         $this->generateOrderID();
         if ($this->flag == 0) {
             $order = $this->order;
-            if($this->order)
-            {
+            if ($this->order) {
                 Order::whereId($this->order->id)->update([
-                    'customer_id'   => $this->selected_customer->id ?? null,
+                    'customer_id' => $this->selected_customer->id ?? null,
                     'customer_name' => $this->selected_customer->name ?? null,
-                    'phone_number'  => $this->selected_customer->phone ?? null,
+                    'phone_number' => $this->selected_customer->phone ?? null,
                     'customer_package_id' => $this->selected_customer_package_id ?? null,
-                    'order_date'    => Carbon::parse($this->date)->toDateTimeString(),
+                    'order_date' => Carbon::parse($this->date)->toDateTimeString(),
                     'delivery_date' => Carbon::parse($this->delivery_date)->toDateTimeString(),
                     'sub_total' => $this->sub_total,
-                    'addon_total'   => $this->addon_total,
-                    'discount'  => $this->discount ?? 0,
-                    'tax_percentage'    => $this->tax_percent,
-                    'tax_amount'    => $this->tax,
-                    'tax_type'  => getTaxType(),
-                    'taxable_amount'    => $this->taxable,
+                    'addon_total' => $this->addon_total,
+                    'discount' => $this->discount ?? 0,
+                    'tax_percentage' => $this->tax_percent,
+                    'tax_amount' => $this->tax,
+                    'tax_type' => getTaxType(),
+                    'taxable_amount' => $this->taxable,
                     'total' => $this->total,
-                    'note'  => $this->payment_notes,
-                    'status'    => 0,
-                    'order_type'    => 1,
-                ],$this->order->id);
+                    'note' => $this->payment_notes,
+                    'status' => 0,
+                    'order_type' => 1,
+                    'created_by' => $this->selected_user_id ?: Auth::user()->id,
+                ], $this->order->id);
                 OrderDetail::whereOrderId($this->order->id)->delete();
                 OrderAddonDetail::whereOrderId($this->order->id)->delete();
                 Payment::whereOrderId($this->order->id)->delete();
-            }
-            else{
+            } else {
                 $order = Order::create([
-                    'order_number'  => $this->order_id,
-                    'customer_id'   => $this->selected_customer->id ?? null,
+                    'order_number' => $this->order_id,
+                    'customer_id' => $this->selected_customer->id ?? null,
                     'customer_name' => $this->selected_customer->name ?? null,
-                    'phone_number'  => $this->selected_customer->phone ?? null,
+                    'phone_number' => $this->selected_customer->phone ?? null,
                     'customer_package_id' => $this->selected_customer_package_id ?? null,
-                    'order_date'    => Carbon::parse($this->date)->toDateTimeString(),
+                    'order_date' => Carbon::parse($this->date)->toDateTimeString(),
                     'delivery_date' => Carbon::parse($this->delivery_date)->toDateTimeString(),
                     'sub_total' => $this->sub_total,
-                    'addon_total'   => $this->addon_total,
-                    'discount'  => $this->discount ?? 0,
-                    'tax_percentage'    => $this->tax_percent,
-                    'tax_amount'    => $this->tax,
-                    'tax_type'  => getTaxType(),
-                    'taxable_amount'    => $this->taxable,
+                    'addon_total' => $this->addon_total,
+                    'discount' => $this->discount ?? 0,
+                    'tax_percentage' => $this->tax_percent,
+                    'tax_amount' => $this->tax,
+                    'tax_type' => getTaxType(),
+                    'taxable_amount' => $this->taxable,
                     'total' => $this->total,
-                    'note'  => $this->payment_notes,
-                    'status'    => 0,
-                    'order_type'    => 1,
-                    'created_by'    => Auth::user()->id,
-                    'financial_year_id' => getFinancialYearId()
+                    'note' => $this->payment_notes,
+                    'status' => 0,
+                    'order_type' => 1,
+                    'created_by' => $this->selected_user_id ?: Auth::user()->id,
+                    'financial_year_id' => getFinancialYearId(),
                 ]);
             }
-
 
             foreach ($this->selservices as $key => $value) {
                 $service = Service::where('id', $value['service'])->first();
@@ -863,12 +1013,12 @@ class PosScreen extends Component
                     $effectivePrice = 0;
                 }
 
-               OrderDetail::create([
-                    'order_id'  => $order->id,
-                    'service_id'    => $service->id,
-                    'service_name'  => $service_type->service_type_name,
-                    'service_quantity'  => $this->quantity[$key],
-                    'service_detail_total'  => $effectivePrice * $this->quantity[$key],
+                OrderDetail::create([
+                    'order_id' => $order->id,
+                    'service_id' => $service->id,
+                    'service_name' => $service_type->service_type_name,
+                    'service_quantity' => $this->quantity[$key],
+                    'service_detail_total' => $effectivePrice * $this->quantity[$key],
                     'service_price' => $this->selling_price[$key],
                     'color_code' => $this->colors[$key],
                 ]);
@@ -878,10 +1028,10 @@ class PosScreen extends Component
                     if ($value === true) {
                         $addon = Addon::where('id', $key)->first();
                         \App\Models\OrderAddonDetail::create([
-                            'order_id'  => $order->id,
-                            'addon_id'    => $addon->id,
-                            'addon_name'    => $addon->addon_name,
-                            'addon_price'   => $addon->addon_price,
+                            'order_id' => $order->id,
+                            'addon_id' => $addon->id,
+                            'addon_name' => $addon->addon_name,
+                            'addon_price' => $addon->addon_price,
                         ]);
                     }
                 }
@@ -889,15 +1039,15 @@ class PosScreen extends Component
             if (count($this->payments) > 0) {
                 foreach ($this->payments as $payment) {
                     $payment = \App\Models\Payment::create([
-                        'payment_date'  => $this->date,
-                        'customer_id'   => $this->selected_customer->id ?? null,
+                        'payment_date' => $this->date,
+                        'customer_id' => $this->selected_customer->id ?? null,
                         'customer_name' => $this->selected_customer->name ?? null,
-                        'order_id'  => $order->id,
-                        'payment_type'  => $payment['payment_type'],
-                        'received_amount'    => $payment['amount'],
-                        'notes'  =>  $payment['notes'] ?? "Notes",
+                        'order_id' => $order->id,
+                        'payment_type' => $payment['payment_type'],
+                        'received_amount' => $payment['amount'],
+                        'notes' => $payment['notes'] ?? 'Notes',
                         'financial_year_id' => getFinancialYearId(),
-                        'created_by'    => Auth::user()->id,
+                        'created_by' => $this->selected_user_id ?: Auth::user()->id,
                     ]);
                 }
             }
@@ -913,33 +1063,33 @@ class PosScreen extends Component
             }
             $this->dispatch(
                 'alert',
-                ['type' => 'success',  'message' => $order->order_number . ' Was Successfully Created!']
+                ['type' => 'success',  'message' => $order->order_number.' Was Successfully Created!']
             );
         }
 
-        if(\Illuminate\Support\Facades\Gate::allows('order_print')){
-            if($this->order){
+        if (\Illuminate\Support\Facades\Gate::allows('order_print')) {
+            if ($this->order) {
                 $this->dispatch('printPageOrder', $order->id);
-            }
-            else{
+            } else {
                 $this->dispatch('printPage', $order->id);
                 $this->clearAll();
             }
         }
-        
-        if($this->order){
-        }
-        else{
+
+        if ($this->order) {
+        } else {
             $this->clearAll();
         }
     }
 
-    public function getPaymentBalance(){
+    public function getPaymentBalance()
+    {
         $orderBalance = $this->total;
         $paymentsTotal = 0;
-        foreach($this->payments as $payment){
+        foreach ($this->payments as $payment) {
             $paymentsTotal += $payment['amount'];
         }
+
         return $orderBalance - $paymentsTotal;
     }
 
@@ -951,6 +1101,7 @@ class PosScreen extends Component
             $this->paid_amount = 0;
         }
     }
+
     //Reload page on clicking clearall
     public function clearAll()
     {
@@ -958,7 +1109,8 @@ class PosScreen extends Component
     }
 
     //remove payment
-    public function removePayment($paymentIndex){
-        array_splice($this->payments,$paymentIndex,1);
+    public function removePayment($paymentIndex)
+    {
+        array_splice($this->payments, $paymentIndex, 1);
     }
 }

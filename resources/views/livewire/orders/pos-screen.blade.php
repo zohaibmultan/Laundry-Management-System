@@ -132,6 +132,23 @@
                 </div>
                 <div class="tw-flex tw-items-start tw-gap-2 tw-w-full tw-shrink">
                     <div class="tw-flex tw-flex-col tw-gap-2 tw-w-full">
+                        @if (Auth::user()->user_type == 1 || Auth::user()->user_type === null)
+                            <div class="icon-field tw-relative tw-w-full tw-items-center">
+                                <span class="icon -tw-translate-y-[2px]">
+                                    <iconify-icon icon="f7:person-badge-shield"></iconify-icon>
+                                </span>
+                                <select class="form-select radius-8 form-control" wire:model.live="selected_user_id">
+                                    <option value="{{ Auth::user()->id }}">
+                                        {{ Auth::user()->name }} ({{ Auth::user()->email }})
+                                    </option>
+                                    @foreach ($active_users as $usr)
+                                        <option value="{{ $usr->id }}">{{ $usr->name }}
+                                            ({{ $usr->email }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        @endif
                         <div class="icon-field tw-relative tw-w-full tw-items-center">
                             <span class="icon -tw-translate-y-[2px]">
                                 <iconify-icon icon="f7:person"></iconify-icon>
